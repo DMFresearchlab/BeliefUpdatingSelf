@@ -1,0 +1,73 @@
+---
+title: "Untitled"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+allto
+allto$condition <- fct_recode(allto$condition,positive="favorable",negative="desfavorable")
+clearTFG <- read.csv2("clearTFG3.csv", header = TRUE, sep = ";")
+
+colnames(clearTFG)[6] <- "condition"
+colnames(clearTFG)[11] <- "update"
+clearTFG$condition <- as.factor(clearTFG$condition)
+clearTFG$condition <- fct_recode(clearTFG$condition,positive="1",negative="2")
+
+#clearTFG <- clearTFG %>% mutate(coherence = ifelse(clearTFG$RESPOSTA.1 == 1 & clearTFG$categoriaposneg == 1 & clearTFG$condition == 1 | clearTFG$RESPOSTA.1 == 2 & clearTFG$categoriaposneg == 2 & clearTFG$condition == 1 | clearTFG$RESPOSTA.1 == 1 & clearTFG$categoriaposneg == 2 & clearTFG$condition == 2 | clearTFG$RESPOSTA.1 == 2 & clearTFG$categoriaposneg == 1 & clearTFG$condition == 2 , "coherent","incoherent") )
+
+clearTFG$catdec <- ifelse(is.na(clearTFG$RESPOSTA.1)==TRUE|is.na(clearTFG$condition)==TRUE |is.na(clearTFG$categoriaposneg)==TRUE,"NA",ifelse(clearTFG$RESPOSTA.1==clearTFG$categoriaposneg,"Fav","Unfav"))
+clearTFG$coherence <- ifelse(is.na(clearTFG$catdec)==TRUE,"NA",ifelse(clearTFG$catdec=="Fav" & clearTFG$condition=="positive","coherent","incoherent"))
+
+
+fin <- rbind(allto[,c("subj","update","condition","coherence","feeddisc","SelfAval1")],clearTFG[,c("subj","update","condition","coherence","feeddisc","SelfAval1")])
+
+
+BIC(lmer(update~condition+(1|subj),data = fin),lmer(update~coherence+(1|subj),data = fin),
+    lmer(update~condition+coherence+(1|subj),data = fin),
+    lmer(update~condition*coherence+(1|subj),data = fin))
+
+summary(lmer(update~condition+(1|subj),data = fin))
+summary(lmer(update~coherence+(1|subj),data = fin))
+summary(lmer(update~condition+coherence+(1|subj),data = fin))
+
+
+
+
+fin$coherence <- factor(fin$coherence,ordered = TRUE,levels = c("incoherent","coherent"))
+fin$Feedback_Congruence <- fin$coherence
+fin$Feedback_Valence <- fin$condition
+fin$Feedback_Valence = fct_recode(fin$Feedback_Valence,Favourable="positive",Unfavourable="negative")
+fin$Feedback_Congruence = fct_recode(fin$Feedback_Congruence,Congruent="coherent",Incongruent="incoherent")
+
+
+modtrials <- glmer(Feedback_Congruence~Feedback_Valence+(1|subj),family = "binomial",data = fin)
+summary(modtrials)
+emmeans(modtrials,pairwise~Feedback_Valence)
+
+sjPlot::tab_model(modtrials)
+
+fing <- fin %>% group_by(Feedback_Valence) %>% count(Feedback_Congruence)
+fing <- fing %>% drop_na()
+sjPlot::plot_grpfrq(var.cnt = fin$Feedback_Valence,var.grp = fin$Feedback_Congruence,show.n = FALSE,show.prc = TRUE) + theme_classic()
+
+
+
+
+modtrialsF <- glmer(Feedback_Congruence~1+(1|subj),family = "binomial",data = fin[fin$Feedback_Valence=="Unfavourable",])
+summary(modtrialsF)
+
+summary(lmer(update~Feedback_Congruence+(1|subj),data = fin[fin$Feedback_Valence=="Unfavourable",]))
+
+summary(lmer(update~coherence+(1|subj),data = allto[allto$condition=="positive",]))
+
+summary(glmer(as.factor(coherence)~1+(1|subj),family = "binomial",data = clearTFG[clearTFG$condition=="positive",]))
+table(clearTFG$coherence,clearTFG$condition)
+allto %>% group_by()
+
+
+```
+
+```{r}
+
+```
+
